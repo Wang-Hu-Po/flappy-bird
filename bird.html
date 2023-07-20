@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flappy Bird</title>
+  <link rel="stylesheet" href="./bird.css">
+</head>
+<body>
+  <!-- 最外层div -->
+  <div id="fbWrap">
+    <div id="head">
+      <img src="" alt="">
+      <span></span>
+    </div>
+    <div id="scoring">
+      0
+    </div>
+    <div id="menu">
+      <img id="start" src="./img/start.png" alt="">
+    </div>
+    <div id="bird">
+      <img src="./img/bird.png" alt="">
+    </div>
+    <!-- ul内部用来追加管道 -->
+    <ul id="ductWrap"></ul>
+  </div>
+
+  <!-- <div class="duct_up duct_row" style="'height:' + upHeight + 'px'" src="./img/duct_up.png"></div>
+  <div class="duct_down duct_row" style="'height:' + downHeight + 'px'" src="./img/duct_down.png"></div> -->
+</body>
+
+<script>
+  // 获取按钮,注意使用classname获取元素得到的是一个数组
+  const start = document.getElementById('start')
+  const head = document.getElementById('head')
+  const bird = document.getElementById('bird')
+  const ductWrap = document.getElementById('ductWrap')
+  const score = document.getElementById('scoring')
+
+  // 定义一变量判断小鸟是否死亡
+  let isDie = false
+  // 点击start
+  start.onclick = function() {
+    head.style.display = 'none'
+    this.parentNode.style.display = 'none'
+    bird.style.display = 'block'
+
+    // 自由落体速度
+    let speed = 0
+    // 鸟的自由落体依靠定时器
+    let bird_timer = setInterval(function() {
+      speed += 0.5
+      bird.style.top = bird.offsetTop + speed + 'px'
+
+      if (bird.offsetTop >= 369) {
+        // 触底不在继续往下
+        bird.style.top = '369px'
+      }
+      else if (bird.offsetTop <= 0) {
+        // 到达顶部不在继续往上
+        bird.style.top = '0px'
+      }
+      // 根据speed 正负来判断小鸟使用哪张图片
+      if (speed > 0) {
+        bird.children[0].src = './img/bird_down.png'
+      }
+      else {
+        bird.children[0].src = './img/bird_up.png'
+      }
+
+
+      // 碰撞检测
+      var ductRow = document.querySelectorAll('.duct_row')
+      for (let i = 0; i < ductRow.length; i++) {
+        let isCrash = crashFn(bird, ductRow[i])
+        if (isCrash) {
+          clearInterval(bird_timer)
+          clearInterval(duct_timer)
+          isDie = true
+          bird.className = 'die'
+        }
+      }
+
+    }, 30)
+
+    // 点击鸟上升
+    document.onmousedown = function() {
+      speed = -5
+    }
+
+
+    // 创建管道 依靠定时器
+    var duct_timer = setInterval(function() {
+      // 创建管道
+      var duct = document.createElement('li')
+      // 随机获取上下管道高度  61 ~261 之间
+      let upHeight = randomNum(61, 261) 
+      let downHeight = 406 - upHeight - 100
+
+      duct.innerHTML = '<div class="duct_up duct_row" style="height:' + upHeight + 'px" src="./img/duct_up.png"></div><div class="duct_down duct_row" style="height:' + downHeight + 'px" src="./img/duct_down.png"></div>'
+      ductWrap.appendChild(duct)
+
+      // 管道移动
+      let duct_left = 0
+      // 节流控制分数的增加，控制小于-31只＋一次，否则小于-31后，定时器每次都会控制分数增加
+      let scoreFlag = true
+      let move_timer = setInterval(function() {
+        duct_left -= 3
+        duct.style.left = duct_left + 'px'
+
+        if (duct_left <= -350 && ductWrap.contains(duct)) {
+          ductWrap.removeChild(duct)
+        }
+        // 超过小鸟分数＋1
+        else if (duct_left <= -321 && scoreFlag) {
+          score.innerHTML = parseInt(score.innerHTML) + 10
+          scoreFlag = false
+        }
+
+        // 小鸟死亡，清楚管道移动定时器
+        if (isDie) {
+          clearInterval(move_timer)
+        }
+      }, 30)
+    }, 3000)
+  }
+
+  // 获取min ~ max 之间随机数函数
+  function randomNum(min, max) {
+    return Math.random() * (max - min) + min
+  }
+
+  // 判断小鸟是否碰撞
+  function crashFn(bird, duct) {
+    // 获取小鸟数据
+    const birdLeft = bird.offsetLeft
+    // offsetWidth = margin + padding + width
+    const birdRight = birdLeft + bird.offsetWidth
+    const birdTop = bird.offsetTop
+    const birdBottom = birdTop + bird.offsetHeight
+    // 获取管道数据
+    const ductLeft = duct.parentNode.offsetLeft + 290
+    const ductRight = ductLeft + duct.offsetWidth
+    const ductTop = duct.offsetTop
+    const ductBottom = ductTop + duct.offsetHeight
+
+    // 碰撞条件， 三条同时满足必碰撞
+    // 1. 小鸟右边 大于等于 管道左边
+    // 2. 小鸟下边 大于等于 管道上边
+    // 3. 小鸟上边 小于等于 管道下边
+    if (birdRight >= ductLeft && birdBottom >= ductTop && birdTop <= ductBottom) {
+      console.log(ductLeft);
+      console.log(birdRight);
+      console.log(birdBottom);
+      console.log(ductTop);
+      console.log(birdTop);
+      console.log(ductBottom);
+      return true
+    }
+    else {
+      return false
+    }
+  }
+</script>
+</html>
